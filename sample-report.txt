@@ -1,0 +1,3 @@
+Proton QA attachment fixture
+Line 2: deterministic content used to compare uploaded vs downloaded bytes.
+Line 3: do not edit without updating expectations.
