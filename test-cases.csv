@@ -1,0 +1,37 @@
+ID,Area,Title,Priority,Preconditions,Steps,Test data,Expected result,Automation classification,Implemented / note
+AUTH-01,Authentication,Valid login reaches inbox,P0,Valid sender account; 2FA off,Open login > enter email+password > Sign in,SENDER_* env,"Mailbox loads, Compose button visible",Automate,Yes - auth.cy.js
+AUTH-02,Authentication,Wrong password rejected,P0,Valid account,Open login > valid email + wrong password > Sign in,"password + ""-wrong""",Error shown; no session; still on login form,Automate,Yes - auth.cy.js
+AUTH-03,Authentication,Logout then Back does not expose mailbox,P0,Logged in,Sign out > browser Back,-,Login form shown; no mailbox content,Automate,Yes - auth.cy.js
+AUTH-04,Authentication,Empty username/password validation,P2,Login page,Submit empty form,-,Field validation shown,Not worth automating,"No - browser/native validation, same code path as AUTH-02"
+AUTH-05,Authentication,Repeated failed logins / CAPTCHA / rate limit,P1,Disposable account,Submit wrong password 5+ times,-,Rate limit or human verification appears,Manual / Exploratory,"No - behaviour changes, can lock test accounts"
+AUTH-06,Authentication,Session expiry and concurrent sessions,P2,Two browsers,Log in on A and B > sign out on A > act on B,-,B handled gracefully,Manual / Exploratory,No - needs long waits / state control
+COMP-01,Compose & send,"Send and receive (two-account when configured, else self-loop)",P0,Both accounts logged in,Sender composes to receiver > Send > receiver waits for inbox > open,Unique subject/body,"Subject, body, sender correct on receiver side; copy in Sent",Automate,Yes - compose.cy.js
+COMP-02,Compose & send,Send without recipient blocked,P0,Sender logged in,Compose with subject+body only > Send,-,Composer stays open; no Sent copy,Automate,Yes - compose.cy.js
+COMP-03,Compose & send,Invalid recipient rejected (parameterised),P1,Sender logged in,Add invalid address > Send,not-an-email; user@; @proton.me,Send blocked; no Sent copy,Automate,Yes - compose.cy.js (3 data rows)
+COMP-04,Compose & send,To + CC both receive,P1,Both accounts,"To=self, CC=receiver > Send",Unique subject,Both inboxes contain message,Automate,"Yes - compose.cy.js - needs 2nd account, skipped otherwise"
+COMP-05,Compose & send,BCC recipients hidden from others,P1,Three accounts,"To=A, BCC=B > Send > inspect A's headers",-,A cannot see B,Manual / Exploratory,No - needs third mailbox; header inspection
+COMP-06,Compose & send,"Rich text, signature, large body",P3,Sender,"Format text, add signature, paste 100KB body",-,Content preserved,Manual / Exploratory,No - visual judgement
+COMP-07,Compose & send,Recipient autocomplete suggestions,P3,Contacts exist,Type partial address,-,Suggestions shown,Not worth automating,"No - low risk, brittle popover"
+DRAFT-01,Drafts,Auto-save survives reload,P0,Sender,Fill composer > close > reload > Drafts > reopen,Unique subject/body,"To, subject, body persisted",Automate,Yes - drafts.cy.js
+DRAFT-02,Drafts,Draft to sent transition,P0,Sender,Save draft > reopen > add recipient > Send,Unique subject,Draft leaves Drafts; appears in Sent; receiver gets it,Automate,Yes - drafts.cy.js
+DRAFT-03,Drafts,Discard draft removes it,P2,Existing draft,Open draft > Discard > confirm,-,Draft gone from Drafts,Automate,Backlog
+INBOX-01,Inbox actions,Mark unread then open marks read,P1,Seeded message in inbox,Mark unread > verify > open > back to inbox,-,Unread state then read state,Automate,Yes - inbox.cy.js
+INBOX-02,Inbox actions,Star and unstar,P1,Seeded message,Star > Starred folder > unstar,-,Appears then disappears from Starred,Automate,Yes - inbox.cy.js
+INBOX-03,Inbox actions,Trash then restore,P0,Seeded message,Trash > verify Trash > restore,-,Message moves Inbox>Trash>Inbox,Automate,Yes - inbox.cy.js
+INBOX-04,Inbox actions,Bulk select and trash,P1,3 seeded messages,Select all 3 > Trash,-,All moved,Automate,Backlog
+INBOX-05,Inbox actions,Archive message,P2,Seeded message,Archive > check Archive,-,Moved to Archive,Automate,Backlog - archive covered indirectly by FILTER-01
+SEARCH-01,Search,Keyword hit and no-result,P1,Seeded message,Search subject > search random token,Unique tokens,Hit shown; empty state shown,Automate,Yes - search.cy.js
+SEARCH-02,Search,Keyword + sender (multi-condition),P1,"Two messages sharing token, different senders",Search token + from=receiver,Token; receiver email,Only receiver's message listed,Automate,"Yes - search.cy.js - needs 2nd account, skipped otherwise"
+SEARCH-03,Search,Date range filter,P2,Messages on different dates,Search with date range,-,Only in-range messages,Not worth automating,No - cannot back-date mail; needs seeded old data
+FILTER-01,Filters,Create filter; match vs non-match,P1,Sender logged in; free tier allows 1 filter,"Create filter ""subject contains token > archive"" > self-send matching and non-matching mail",Unique subjects/token,Matching mail in Archive and absent from Inbox; non-matching stays in Inbox; filter deleted in teardown,Automate,Yes - filters.cy.js
+FILTER-02,Filters,"Disable, edit, delete filter",P2,Existing filter,Toggle off > send > edit > delete,-,Behaviour follows state,Automate,Backlog
+ASYNC-01,Async,Undo send then real send,P0,Undo Send enabled,"Send > click Undo > verify composer restored, nothing in Sent > resend > wait for undo to lapse > verify delivery",Unique subject,Transient undo state; final delivery,Automate,Yes - async.cy.js
+ASYNC-02,Async,Scheduled send create/cancel/edit,P1,Sender,Schedule > verify in Scheduled > cancel,-,Scheduled state shown then removed,Automate,Backlog - state only
+ASYNC-03,Async,Delivery at scheduled time,P2,Sender,Schedule +1 min > wait,-,Delivered on time,Manual / Exploratory,No - server-side clock; Playwright clock mocking cannot advance it
+ATT-01,Attachments,Send attachment and verify bytes,P1,Both accounts,Attach file > send > receiver downloads,sample-report.txt,Filename shown; downloaded bytes equal source,Automate,Yes - attachments.cy.js
+ATT-02,Attachments,Attachment size limit,P2,Sender,Attach >25MB file,Large file,Clear error,Manual / Exploratory,"No - slow upload, plan-dependent"
+ATT-03,Attachments,Draft keeps attachment,P1,Sender,Attach > close > reopen draft,-,Attachment still listed,Automate,Backlog
+FOLD-01,Folders,Move to custom folder,P1,Seeded message; free tier folder cap,Create folder > move message > open folder,Unique folder name,Leaves Inbox; in folder; folder deleted in teardown,Automate,Yes - folders.cy.js
+FOLD-02,Labels,Apply and remove label,P1,Seeded message,Create label > apply > remove,-,Label shown then removed,Automate,Backlog
+SEC-01,Security,Password-protected email,P1,External recipient,Send with password > open link,-,Requires password,Manual / Exploratory,"No - external flow, crypto UI"
+SEC-02,Security,HTML/script sanitisation in received mail,P1,Crafted HTML mail,Send HTML with script/img beacon > open,-,No script runs; remote content blocked,Manual / Exploratory,No - needs crafted mail and judgement
